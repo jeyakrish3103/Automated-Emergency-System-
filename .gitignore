@@ -7,3 +7,5 @@ venv/
 .DS_Store
 .pytest_cache/
 .vercel
+CLAUDE (1).md
+BACKEND_PLAN.md
