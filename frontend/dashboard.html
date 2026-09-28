@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dispatch Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <div class="sidebar">
+      <div class="sidebar-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h1 class="display-text" style="font-size: 1.25rem;">Active Alerts</h1>
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--text-secondary);">
+          <div class="scanning-cue" id="liveIndicator"></div>
+          <span id="connectionText">Connecting...</span>
+        </div>
+      </div>
+      <div class="alerts-list" id="alertsList">
+        <!-- Active alerts render here -->
+      </div>
+      <div class="resolved-section">
+        <div class="resolved-header" id="resolvedHeader">
+          <span>Resolved Alerts</span>
+          <span class="badge" style="background: var(--border-color); color: var(--text-primary);" id="resolvedCount">0</span>
+        </div>
+        <div class="resolved-list" id="resolvedList">
+          <!-- Resolved alerts render here -->
+        </div>
+      </div>
+    </div>
+    <div class="map-area">
+      <div id="map"></div>
+      
+      <!-- Detail Panel -->
+      <div class="detail-panel" id="detailPanel">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; align-items: flex-start;">
+          <h2 class="display-text" style="font-size: 1.25rem;">Alert Details</h2>
+          <button class="btn-close-detail" id="closeDetail" aria-label="Close details">&times;</button>
+        </div>
+        <div id="detailContent">
+          <!-- Populated by JS -->
+        </div>
+        <div class="detail-actions">
+          <button class="btn-action btn-dispatch" id="btnDispatch" style="background: var(--color-critical);">Dispatch</button>
+          <button class="btn-action btn-ack" id="btnAcknowledge">Acknowledge</button>
+          <button class="btn-action btn-resolve" id="btnResolve">Resolve</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

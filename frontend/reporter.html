@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Reporter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="reporter-container">
+    <div class="header-row">
+      <h1 class="display-text" style="font-size: 1.5rem;">Emergency SOS</h1>
+      <div class="connection-status" id="connectionStatus">
+        <div class="status-dot"></div>
+        <span>Checking...</span>
+      </div>
+    </div>
+
+    <div class="sos-area" id="sosArea">
+      <button class="sos-button" id="sosBtn" aria-label="Press and hold for SOS">
+        <div class="radar-ring"></div>
+        SOS
+      </button>
+      <p class="text-secondary" style="text-align: center;">Press and hold to record message.<br>Location will be sent automatically.</p>
+      
+      <div class="transcript-box" id="transcriptBox"></div>
+
+      <div class="fallback-form" id="fallbackForm">
+        <p class="text-secondary" style="text-align: center; margin-bottom: 0.5rem;">Voice not supported. Type your emergency.</p>
+        <textarea id="fallbackText" placeholder="Describe your emergency..."></textarea>
+        <button class="btn-primary" id="fallbackSubmit">Send Alert</button>
+      </div>
+    </div>
+
+    <div class="error-message" id="errorMessage">
+      <h3 style="margin-bottom: 0.5rem;">Connection Failed</h3>
+      <p>Failed to reach the dispatch center. Please call emergency services directly (e.g., 112).</p>
+    </div>
+
+    <div class="dispatch-card" id="dispatchCard">
+      <div class="card-header">
+        <h2 class="display-text" style="font-size: 1.25rem;">Help is on the way</h2>
+        <span class="badge" id="dispatchSeverity"></span>
+      </div>
+      <p id="dispatchSummary" style="margin-bottom: 1rem;"></p>
+      <div style="background: var(--bg-color); padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+        <p class="text-secondary" style="font-size: 0.875rem;">Responding Station</p>
+        <p id="dispatchStationName" style="font-weight: 600; margin-bottom: 0.5rem;"></p>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <p class="text-secondary" style="font-size: 0.875rem;">Estimated ETA</p>
+            <p class="display-text text-info" style="font-size: 2rem;" id="dispatchEta"></p>
+          </div>
+          <span class="badge" id="dispatchStatusBadge">DISPATCHED</span>
+        </div>
+      </div>
+      <div id="escalationNotice" style="display: none; margin-top: 1rem; color: var(--color-warning); font-size: 0.875rem; font-weight: 500;">
+        ⚠️ Situation escalated by operator.
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Response Prototype</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .landing-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      gap: 2rem;
+    }
+    .landing-title {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    .landing-nav {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .landing-card {
+      background: var(--surface-bg);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      padding: 2rem;
+      width: 300px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .landing-card:hover {
+      background: var(--surface-hover);
+      transform: translateY(-4px);
+    }
+    .landing-card h3 {
+      margin-bottom: 0.5rem;
+      color: var(--color-info);
+    }
+    .landing-card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="landing-container">
+    <div>
+      <h1 class="landing-title">Emergency Response App</h1>
+      <p style="color: var(--text-muted)">Select a view to launch the prototype</p>
+    </div>
+    
+    <div class="landing-nav">
+      <a href="reporter.html" class="landing-card">
+        <h3>Reporter View</h3>
+        <p>Mobile-first SOS interface for users in distress. Features voice recognition and quick dispatch.</p>
+      </a>
+      <a href="dashboard.html" class="landing-card">
+        <h3>Station Dashboard</h3>
+        <p>Desktop command center for operators to monitor live alerts and coordinate response.</p>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,149 @@
+PRD — Emergency Response App: Frontend
+
+Owner: Jeyakrishnan Scope: frontend/ only (reporter.html, dashboard.html, style.css, script.js) — lives in a shared repo alongside the teammate's backend Status: Neither page has been built yet — both are starting from scratch Backend dependency: FastAPI on Vercel serverless functions, same origin as the static frontend under /api/ (see BACKEND_PLAN.md). No separate host, no CORS. Live updates via Supabase Realtime, not a raw WebSocket.
+
+Build-ready. Both pages are being built from scratch. Every integration detail below is derived directly from the actual backend plan, with no assumed endpoints, statuses, or fields that don't exist there. All prior open questions are resolved as concrete decisions in Section 10. Mock mode is required everywhere so this can be built and demoed with no backend running.
+
+1. Problem & context
+
+This is a course project simulating an emergency dispatch system for the Chennai area — not connected to real government infrastructure. The frontend has two distinct users who never see each other's screen:
+
+The reporter — someone in distress, using a phone, possibly panicked. Needs one obvious action, minimal reading, fast confirmation that help is coming.
+The station operator — staff at a dispatch station, using a larger screen. Needs to scan multiple incoming alerts fast, judge severity at a glance, and see where each alert is on a map.
+
+The two pages share a visual language (dark, functional, "control room" aesthetic) but are optimized for opposite conditions: one for stress and speed, one for scanning and situational awareness.
+
+2. Goals
+A reporter can raise an alert in under 10 seconds of interaction, without reading instructions.
+A station operator can tell alert severity and location at a glance, without opening each alert individually.
+Both pages work convincingly as a demo even before the backend is deployed (mock-mode fallback everywhere).
+Frontend is deployable as static files on Vercel, calling the same-origin /api/ functions once merged into the shared repo.
+3. Non-goals
+No user accounts, login, or auth — this is a public-access emergency flow, not a logged-in product.
+No native mobile app — mobile web only, via browser.
+No offline support / PWA caching in this phase.
+No admin tools for managing the station directory (that's the backend's seed data job).
+No backend code, Supabase schema, or Gemini prompt work — that's the teammate's scope.
+4. Users & environment
+	Reporter	Station operator
+Device	Phone, one-handed	Desktop/laptop
+Mental state	Possibly panicked, low patience	Alert but scanning many things
+Network	Variable, possibly weak signal	Stable
+Session length	Seconds	Continuous, all-shift
+5. Page 1 — Reporter (reporter.html) — 🔲 Not started
+Core flow
+Page loads → connectivity check is a lightweight GET /api/stations call (the backend has no /health endpoint; /api/stations is cheap, read-only, and always available), shown as a small connection-status indicator.
+User presses and holds the SOS button.
+On press: geolocation request fires, speech recognition starts, live transcript renders. If SpeechRecognition is unsupported, the button is replaced by a text input + submit (see FR4).
+On release: recognition stops, payload POSTs to POST /api/alert:
+json
+   { "transcript": "...", "latitude": 13.05, "longitude": 80.21 }
+Response renders a dispatch card from:
+json
+   { "alert": { "id": "...", "type": "...", "severity": 5, "summary": "...", "status": "dispatched", "created_at": "..." },
+     "station": { "id": "...", "name": "...", "latitude": 13.048, "longitude": 80.208, "distance_km": 1.4 } }
+
+Use alert.id as the reference ID. The card shows an estimated ETA computed client-side as round(distance_km / 40 * 60) minutes (40 km/h assumed average emergency-response urban speed), labeled "Estimated ETA" — never presented as a backend-calculated figure. 6. While the alert is active (status not resolved), the page calls POST /api/alerts/:id/checkin with { "motion_ok": true|false } every 30 seconds. Response { alert, escalated } — if escalated is true, update the dispatch card's severity/status in place and show a brief "situation escalated" notice.
+
+Functional requirements
+FR1: Press-and-hold interaction (mouse + touch), not tap-to-toggle — reduces accidental triggers.
+FR2: Location and microphone permission requests run in parallel and fail independently — a denied permission on one doesn't block the other.
+FR3: Live transcript displayed word-by-word as the user speaks (interim + final results).
+FR4: If SpeechRecognition isn't supported (Firefox, Safari), swap the press-and-hold button for a textarea + "Send alert" button that submits the same POST /api/alert payload (transcript typed instead of spoken). No dead end for unsupported browsers.
+FR5: Mock mode triggers automatically whenever POST /api/alert fails or times out (no live backend reachable) — simulates a dispatch response so the UI stays demoable. No config constant to toggle.
+FR6: Failed submission (after mock-mode fallback also fails, e.g. JS error) shows an explicit error and a suggestion to call emergency services directly — never fails silently.
+FR7: 30-second check-in loop per Core flow step 6; a failed check-in retries once, then silently backs off — it must never crash or block the reporter's view of their dispatch card.
+Non-functional requirements
+Usable one-handed on a phone screen down to ~360px width.
+Visible focus states for keyboard/switch-access users.
+Respects prefers-reduced-motion (ambient ring pulse disabled).
+No blocking modals or multi-step forms in the critical path.
+Out of scope for this page
+Multi-language voice input (currently en-IN only).
+6. Page 2 — Dashboard (dashboard.html) — 🔲 Not started
+Core flow
+Page loads → GET /api/alerts and GET /api/stations for initial state, then subscribes to a Supabase Realtime channel on the alerts table (postgres_changes, event *) for live inserts/updates — no WebSocket, no polling after the initial load. If the Realtime subscription can't connect (e.g. no config/credentials available yet), fall into mock mode: simulate new alerts appearing on an interval so the page stays demoable.
+Incoming/changed alerts update the list, tagged with severity and an age indicator derived from created_at.
+Map (Leaflet.js/OpenStreetMap — see Section 6a) plots each alert's location alongside station positions from GET /api/stations.
+Operator selects an alert to see full detail (GET /api/alerts/:id) and change its status via PATCH /api/alerts/:id.
+On a new alert with severity === 5, play a single short audio tone (one cue, not a looping siren) alongside the visual indicator — critical alerts must not rely on the operator looking at the screen at the right moment.
+When status becomes resolved, the alert moves out of the main feed into a collapsed "Resolved" section rather than disappearing, so a demo can show full history on request.
+Functional requirements
+FR1: Real-time alert feed via a Supabase Realtime channel subscription on the alerts table.
+FR2: Severity encoded visually (color + label), not color alone — for colorblind accessibility.
+FR3: Map view shows all active alerts as markers; clicking a marker highlights the corresponding list row and vice versa.
+FR4: Each alert card shows: summary, time since created_at, distance_km from station, severity, status.
+FR5: Operator can update alert status via PATCH /api/alerts/:id with { "status": "..." }, using only the backend's real enum: reported | dispatched | monitoring | resolved | escalated. The operator-facing "Acknowledge" button sets status to monitoring (the closest existing value — there is no separate acknowledged status in this backend).
+FR6: Connection-loss state (Realtime subscription dropped) is visually distinct from "no alerts" — an empty feed and a dead subscription must never look the same.
+FR7: Single audio cue on new critical (severity 5) alerts, per Core flow step 5. No audio for lower severities.
+FR8: Resolved alerts collapse into a separate section rather than vanishing, per Core flow step 6.
+Render unrecognized type/status/category values sensibly rather than breaking — both documents note these enums are expected to grow.
+6a. Map integration (Leaflet + OpenStreetMap)
+
+Client-side only — this is not a backend integration point, needs no API key, and requires no endpoint from the teammate's backend beyond the lat/lng fields already present in GET /api/alerts and GET /api/stations.
+
+Load via CDN in dashboard.html:
+
+html
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+Initialize the map, then add the tile layer after the map object exists:
+
+js
+const map = L.map('map').setView([13.05, 80.21], 12); // center on Chennai
+
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+}).addTo(map);
+maxZoom: 19 avoids blurry tiles when zoomed close on a station/alert marker.
+Attribution is required by OSM's usage policy — keep it visible, don't remove or hide it.
+Only one tile layer should ever be added to the map — if scaffolding already includes a placeholder tile layer, replace it rather than stacking a second one.
+Station markers (from GET /api/stations) and alert markers (from GET /api/alerts/Realtime) use separate marker icons/colors so they're visually distinguishable at a glance (ties into FR2's severity-by-color-and-label requirement).
+Non-functional requirements
+Must remain legible and usable with 10+ simultaneous alerts on screen.
+Designed for a stable desktop viewport first; mobile support is a nice-to-have, not a requirement.
+Out of scope for this phase
+Multi-station coordination (handing an alert from one station to another).
+Historical/resolved-alert archive view beyond the collapsed section in this session.
+Operator authentication.
+7. Shared design system (already established)
+Color: dark navy control-room background (
+#10141C), functional severity colors (critical red, warning amber, safe green, info blue) — no decorative palette.
+Type: Space Grotesk (display), Inter (body/UI), IBM Plex Mono (timestamps, coordinates, station/alert IDs).
+Motion: one deliberate signature per page (SOS radar-ring pulse on reporter; a "live scanning" cue on dashboard) — motion elsewhere is avoided by design.
+Tokens live in style.css as CSS custom properties; both pages should draw from the same variable set rather than redefining colors locally.
+8. Technical integration points
+Frontend calls	Method/shape
+GET /api/stations	Used for map markers and as the reporter page's connectivity check
+POST /api/alert	Body: { transcript, latitude, longitude } → Returns { alert: {...}, station: {...} }
+GET /api/alerts	Optional ?status= filter → Returns { alerts: [...] }
+GET /api/alerts/:id	Returns a single alert's full detail
+PATCH /api/alerts/:id	Body: { status } (one of reported|dispatched|monitoring|resolved|escalated) → Returns the updated alert object
+POST /api/alerts/:id/checkin	Body: { motion_ok } → Returns { alert: {...}, escalated: boolean }
+Supabase Realtime	Dashboard subscribes to postgres_changes on the alerts table; URL + anon key provided once the project is set up (safe to expose client-side)
+OpenStreetMap tiles (tile.openstreetmap.org)	Client-side only — no backend endpoint, no API key; see Section 6a
+
+All backend routes are same-origin (/api/... on the same Vercel deployment as the static frontend, once merged into the shared repo) — no BACKEND_URL constant, no CORS handling. No authentication in v1.
+
+Code defensively: fields may be added, enum lists may grow, and requests can be slow/flaky (serverless + prototype) — handle timeouts and partial data without breaking the page.
+
+9. Success criteria for this phase
+Reporter flow completable by a first-time user with zero instructions, in one take, on any major browser (voice on Chrome, text fallback elsewhere).
+Dashboard operator can correctly identify the most severe active alert within 3 seconds of it appearing, in a demo with 5+ simulated concurrent alerts.
+Both pages run standalone in mock mode for grading/demo purposes even if the backend is down or not yet merged into the shared repo.
+10. Decisions made in this revision
+Audio on critical alerts: yes, one short tone per new severity-5 alert. Chosen because the dashboard is meant to be scanned continuously across a shift; a purely visual cue risks being missed, and a single tone (not a looping siren) avoids alarm fatigue.
+Text fallback for unsupported browsers: included (FR4). Chosen because silently blocking Firefox/Safari users would make the reporter flow undemoable on those browsers.
+Resolved/acknowledged alerts: collapse into a separate section rather than disappearing (FR8). Chosen so a grader or demo audience can review the full session's alerts without the main feed getting cluttered.
+No /health endpoint: connectivity check reuses GET /api/stations instead (Section 5, step 1).
+No acknowledged status: the operator's "Acknowledge" action sets status to monitoring, the closest existing enum value (Section 6, FR5).
+No backend ETA: the dispatch card computes an estimate from distance_km at an assumed 40 km/h and labels it clearly as an estimate (Section 5, step 5).
+Map tiles: standard OSM tile URL, no API key, client-side only (Section 6a).
+11. Build sequence
+Reporter page — SOS flow, voice capture (with text fallback, FR4), /api/alert integration with mock-mode, check-in loop (FR7), dispatch card.
+Dashboard shell — Supabase Realtime connection (with mock-mode fallback), alert list, severity styling, critical-alert audio cue (no map yet).
+Dashboard map — Leaflet integration per Section 6a, marker/list sync.
+Alert lifecycle — status updates (PATCH /api/alerts/:id) wired to backend state, including the Acknowledge → monitoring mapping and the resolved-section collapse.
+Polish pass — reduced-motion, focus states, empty/error states for both pages.
