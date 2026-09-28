@@ -5,7 +5,10 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi",
     "uvicorn",
-    # every package your backend imports goes here
+    "fastapi==0.115.0",
+    "supabase==2.9.1",
+    "google-generativeai==0.8.3",
+    "python-dotenv==1.0.1",
 ]
 
 [tool.vercel]
