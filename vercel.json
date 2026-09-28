@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "backend/api/index.py": {
+      "maxDuration": 30
+    }
+  }
+}
